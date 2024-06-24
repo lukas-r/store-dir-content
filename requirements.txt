@@ -1,0 +1,4 @@
+pathspec
+setuptools
+wheel
+twine

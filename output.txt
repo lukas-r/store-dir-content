@@ -1,0 +1,298 @@
+##### START OF FILE: setup.py #####
+from setuptools import find_packages, setup
+
+setup(
+    name="store_dir_content",
+    version="0.1",
+    packages=find_packages(),
+    install_requires=[
+        "pathspec",
+    ],
+    entry_points={
+        "console_scripts": [
+            "store-dir-content=store_dir_content.cli:main",
+        ],
+    },
+)
+
+##### END OF FILE: setup.py #####
+
+##### START OF FILE: output.txt #####
+
+##### END OF FILE: output.txt #####
+
+##### START OF FILE: store_dir_content/__init__.py #####
+
+##### END OF FILE: store_dir_content/__init__.py #####
+
+##### START OF FILE: store_dir_content/cli.py #####
+# my_cli_tool/cli.py
+import argparse
+import json
+import os
+from typing import List, TextIO
+
+import pathspec
+
+
+def read_files_in_directories(
+    directories: List[str],
+    file_extensions: str,
+    output_file: str,
+    ignore_folders: str,
+    respect_gitignore: bool,
+) -> None:
+    extensions: List[str] = file_extensions.split(",")
+    ignore_folders_list: List[str] = ignore_folders.split(",") if ignore_folders else []
+    with open(output_file, "w", encoding="utf-8") as out_file:
+        for directory in directories:
+            gitignore_spec = (
+                load_gitignore_spec(directory) if respect_gitignore else None
+            )
+            for root, dirs, files in os.walk(directory):
+                # Skip the directories that need to be ignored
+                dirs[:] = [d for d in dirs if d not in ignore_folders_list]
+                for file in files:
+                    print(file)
+                    print(file_extensions)
+                    file_path: str = os.path.join(root, file)
+                    if gitignore_spec and gitignore_spec.match_file(
+                        os.path.relpath(file_path, directory)
+                    ):
+                        continue
+                    if file_extensions == "." or any(
+                        file.endswith(ext) for ext in extensions
+                    ):
+                        relative_path: str = os.path.relpath(file_path, directory)
+                        out_file.write(f"##### START OF FILE: {relative_path} #####\n")
+                        if file.endswith(".ipynb"):
+                            extract_ipynb_content(file_path, out_file)
+                        else:
+                            with open(file_path, "r", encoding="utf-8") as f:
+                                content: str = f.read()
+                                out_file.write(content + "\n")
+                        out_file.write(f"##### END OF FILE: {relative_path} #####\n\n")
+
+
+def extract_ipynb_content(file_path: str, out_file: TextIO) -> None:
+    with open(file_path, "r", encoding="utf-8") as f:
+        notebook = json.load(f)
+        for cell in notebook.get("cells", []):
+            if cell["cell_type"] in ("code", "markdown"):
+                cell_content = "".join(cell.get("source", []))
+                out_file.write(cell_content + "\n\n")
+
+
+def load_gitignore_spec(directory: str):
+    gitignore_path = os.path.join(directory, ".gitignore")
+    if os.path.exists(gitignore_path):
+        with open(gitignore_path, "r", encoding="utf-8") as f:
+            return pathspec.PathSpec.from_lines("gitwildmatch", f)
+    return None
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Read files with specific extensions in directories and write their contents to an output file."
+    )
+    parser.add_argument(
+        "directories", type=str, nargs="+", help="The directories to search for files."
+    )
+    parser.add_argument(
+        "file_extensions",
+        type=str,
+        help="Comma-separated list of file extensions to include (e.g., .txt,.md,.log).",
+    )
+    parser.add_argument(
+        "output_file",
+        type=str,
+        help="The path of the output file where the results will be written.",
+    )
+    parser.add_argument(
+        "-i",
+        "--ignore_folders",
+        type=str,
+        default="",
+        help="Comma-separated list of folder names to ignore (e.g., folder1,folder2).",
+    )
+    parser.add_argument(
+        "-g",
+        "--respect_gitignore",
+        action="store_true",
+        help="Respect .gitignore files in the directories.",
+    )
+
+    args = parser.parse_args()
+
+    read_files_in_directories(
+        args.directories,
+        args.file_extensions,
+        args.output_file,
+        args.ignore_folders,
+        args.respect_gitignore,
+    )
+
+
+if __name__ == "__main__":
+    main()
+
+##### END OF FILE: store_dir_content/cli.py #####
+
+##### START OF FILE: store_dir_content.egg-info/PKG-INFO #####
+Metadata-Version: 2.1
+Name: store_dir_content
+Version: 0.1
+Requires-Dist: pathspec
+
+##### END OF FILE: store_dir_content.egg-info/PKG-INFO #####
+
+##### START OF FILE: store_dir_content.egg-info/SOURCES.txt #####
+setup.py
+store_dir_content/__init__.py
+store_dir_content/cli.py
+store_dir_content.egg-info/PKG-INFO
+store_dir_content.egg-info/SOURCES.txt
+store_dir_content.egg-info/dependency_links.txt
+store_dir_content.egg-info/entry_points.txt
+store_dir_content.egg-info/requires.txt
+store_dir_content.egg-info/top_level.txt
+##### END OF FILE: store_dir_content.egg-info/SOURCES.txt #####
+
+##### START OF FILE: store_dir_content.egg-info/entry_points.txt #####
+[console_scripts]
+store-dir-content = store_dir_content.cli:main
+
+##### END OF FILE: store_dir_content.egg-info/entry_points.txt #####
+
+##### START OF FILE: store_dir_content.egg-info/requires.txt #####
+pathspec
+
+##### END OF FILE: store_dir_content.egg-info/requires.txt #####
+
+##### START OF FILE: store_dir_content.egg-info/top_level.txt #####
+store_dir_content
+
+##### END OF FILE: store_dir_content.egg-info/top_level.txt #####
+
+##### START OF FILE: store_dir_content.egg-info/dependency_links.txt #####
+
+
+##### END OF FILE: store_dir_content.egg-info/dependency_links.txt #####
+
+##### START OF FILE: build/lib/store_dir_content/__init__.py #####
+
+##### END OF FILE: build/lib/store_dir_content/__init__.py #####
+
+##### START OF FILE: build/lib/store_dir_content/cli.py #####
+# my_cli_tool/cli.py
+import argparse
+import json
+import os
+from typing import List, TextIO
+
+import pathspec
+
+
+def read_files_in_directories(
+    directories: List[str],
+    file_extensions: str,
+    output_file: str,
+    ignore_folders: str,
+    respect_gitignore: bool,
+) -> None:
+    extensions: List[str] = file_extensions.split(",")
+    ignore_folders_list: List[str] = ignore_folders.split(",") if ignore_folders else []
+    with open(output_file, "w", encoding="utf-8") as out_file:
+        for directory in directories:
+            gitignore_spec = (
+                load_gitignore_spec(directory) if respect_gitignore else None
+            )
+            for root, dirs, files in os.walk(directory):
+                # Skip the directories that need to be ignored
+                dirs[:] = [d for d in dirs if d not in ignore_folders_list]
+                for file in files:
+                    print(file)
+                    print(file_extensions)
+                    file_path: str = os.path.join(root, file)
+                    if gitignore_spec and gitignore_spec.match_file(
+                        os.path.relpath(file_path, directory)
+                    ):
+                        continue
+                    if file_extensions == "." or any(
+                        file.endswith(ext) for ext in extensions
+                    ):
+                        relative_path: str = os.path.relpath(file_path, directory)
+                        out_file.write(f"##### START OF FILE: {relative_path} #####\n")
+                        if file.endswith(".ipynb"):
+                            extract_ipynb_content(file_path, out_file)
+                        else:
+                            with open(file_path, "r", encoding="utf-8") as f:
+                                content: str = f.read()
+                                out_file.write(content + "\n")
+                        out_file.write(f"##### END OF FILE: {relative_path} #####\n\n")
+
+
+def extract_ipynb_content(file_path: str, out_file: TextIO) -> None:
+    with open(file_path, "r", encoding="utf-8") as f:
+        notebook = json.load(f)
+        for cell in notebook.get("cells", []):
+            if cell["cell_type"] in ("code", "markdown"):
+                cell_content = "".join(cell.get("source", []))
+                out_file.write(cell_content + "\n\n")
+
+
+def load_gitignore_spec(directory: str):
+    gitignore_path = os.path.join(directory, ".gitignore")
+    if os.path.exists(gitignore_path):
+        with open(gitignore_path, "r", encoding="utf-8") as f:
+            return pathspec.PathSpec.from_lines("gitwildmatch", f)
+    return None
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Read files with specific extensions in directories and write their contents to an output file."
+    )
+    parser.add_argument(
+        "directories", type=str, nargs="+", help="The directories to search for files."
+    )
+    parser.add_argument(
+        "file_extensions",
+        type=str,
+        help="Comma-separated list of file extensions to include (e.g., .txt,.md,.log).",
+    )
+    parser.add_argument(
+        "output_file",
+        type=str,
+        help="The path of the output file where the results will be written.",
+    )
+    parser.add_argument(
+        "-i",
+        "--ignore_folders",
+        type=str,
+        default="",
+        help="Comma-separated list of folder names to ignore (e.g., folder1,folder2).",
+    )
+    parser.add_argument(
+        "-g",
+        "--respect_gitignore",
+        action="store_true",
+        help="Respect .gitignore files in the directories.",
+    )
+
+    args = parser.parse_args()
+
+    read_files_in_directories(
+        args.directories,
+        args.file_extensions,
+        args.output_file,
+        args.ignore_folders,
+        args.respect_gitignore,
+    )
+
+
+if __name__ == "__main__":
+    main()
+
+##### END OF FILE: build/lib/store_dir_content/cli.py #####
+
